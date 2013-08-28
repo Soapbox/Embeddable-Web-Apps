@@ -30,7 +30,7 @@ var EmbeddableApp = (function (window, $) {
     
     App = function App(options) {
         //init...
-        this._init();
+        this._init(options);
         
         //validate
         
@@ -49,7 +49,7 @@ var EmbeddableApp = (function (window, $) {
     App.prototype = {
         _init: function (options) {
             this.id = id;
-            this.settings = $.extend({}, options, defaults);
+            this.settings = $.extend({}, defaults, options);
             this.element = null;
             this.events = {};
             this.connected = false;
