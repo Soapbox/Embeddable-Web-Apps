@@ -3,7 +3,7 @@
 //   - porthole.js
 //
 
-var EmbeddableApp = (function (window, $) {
+var EmbeddableApp = (function (window, $, Porthole) {
 	'use strict';
 	var pub = {},
 		id = 0,
@@ -20,7 +20,8 @@ var EmbeddableApp = (function (window, $) {
 		proxyUrl: '', // URL TO THE PROXY PAGE
 		resize: false,
 		proxyHash: false,
-		debug: false
+		debug: false,
+		resizeInterval: 300
 	};
 	
 	templateParse = function (templateName, params) {
@@ -57,24 +58,59 @@ var EmbeddableApp = (function (window, $) {
 			
 			id = id + 1;
 		},
+
 		connected: function () {
 			this.isConnected = true;
 			this._emptySendQueue();
 		},
+    
 		disconnected: function () {
 			this.isConnected = false;
 		},
+
+		resize: function (oldHeight) {
+			if(this.type !== 'app' || !this.settings.resize){
+				// Don't call this function on the parent page
+				// Also, if it's turned off then don't call it.
+				return;
+			}
+
+			var embeddable = this,
+				height = $('body').outerHeight();
+
+			if($.type(oldHeight) !== 'number'){
+				oldHeight = 0;
+			}
+
+			if( oldHeight !== height ){
+
+				embeddable.send('resize', {
+					height: height
+				});
+
+				setTimeout(function(){
+					embeddable.resize(height);
+				}, embeddable.settings.resizeInterval);
+
+			}
+		},
+
 		events: {
 			// events prefixed w/ `_` are internal events.
 			// they are cancellable by their non-prefixed counterparts
+			// they are also overwritable incase needed... but probably shouldn't be.
 			_connect: function () {
-				
+
 			},
-			_resize: function () {},
+			_resize: function (payload) {
+
+				debugger;
+
+			},
 			_hashchange: function () {}
 		},
 		create: function () {
-
+			this.type = 'app';
 		},
 		insert: function (selector) {
 			// Inserts the app etc. onto the parent page.
@@ -108,6 +144,7 @@ var EmbeddableApp = (function (window, $) {
 			
 			embeddable.element = $embeddable;
 			embeddable.name = name;
+			embeddable.type = 'parent';
 
 			return $embeddable;
 		},
@@ -211,7 +248,7 @@ var EmbeddableApp = (function (window, $) {
 			var embeddable = this;
 
 			if (embeddable.settings.debug && $.type(window.console.log) !== 'undefined'){
-				console.log(arguments)
+				console.log(arguments);
 			}
 		}
 	};
@@ -227,16 +264,25 @@ var EmbeddableApp = (function (window, $) {
 		// used on the app page itself.
 		var embeddable = new App(options);
 
-		return new App(options);
-
+		embeddable.create();
 		//if this is app page
 		// 0. on "onload"
 		// 1. setup proxy to Parent
 		embeddable.setupProxy();
 
 		// 2. send event "App-Ready" w/ basic setup info
-		embeddable.send('App-Ready', {});
+		// TODO
+		embeddable.send('App-Ready', {
+			// Should send
+			// - width
+			// - height
+			// - offset X
+			// - offset Y
+			// - ..?
+		});
 		// 3. listen & wait...
+
+		embeddable.resize();
 
 		return embeddable;
 		
@@ -250,7 +296,6 @@ var EmbeddableApp = (function (window, $) {
 		var $embeddable = embeddable.insert(selector);
 
 		// 2. setup bindings on events like hash change events.
-
 
 		// 3. setup proxy
 		embeddable.setupProxy(embeddable.name);
@@ -268,4 +313,4 @@ var EmbeddableApp = (function (window, $) {
 	};
 
 	return pub;
-}(window, jQuery));
+})(window, jQuery, Porthole);
