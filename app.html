@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>App - Embeddable App Test</title>
+
+		<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+		<script type="text/javascript" src="https://rawgithub.com/ternarylabs/porthole/master/src/porthole.min.js"></script>
+		<script type="text/javascript" src="https://rawgithub.com/millermedeiros/js-signals/master/dist/signals.min.js"></script>
+		<script type="text/javascript" src="https://rawgithub.com/millermedeiros/Hasher/master/dist/js/hasher.min.js"></script>
+		<script type="text/javascript" src="//unhassle.brennanmceachran.com/embedded-app.js"></script>
+	</head>
+	<body>
+		<h1>APP!</h1>
+		<p><a href="#home">Home</a> | <a href="#about">About</a> | <a href="#contact">Contact</a></p>
+		<script type="text/javascript">
+			(function () {
+				'use strict';
+
+				var embeddedApp = EmbeddableApp.create({
+					proxyUrl:	'http://unhassle.brennanmceachran.com/proxy.html',
+					resize:		true,
+					proxyHash:	true
+				});
+				
+				embeddedApp.on({
+					offsetModal: function (payload) {
+						// offset the size of the modal depending on where the user 
+						// is on the parent page.
+					}
+				});
+
+				//embeddedApp.send('backdrop', {show: true});
+			}());
+
+			setTimeout(function(){
+				$('body').append(
+						'<hr><p>hello EVERYONE</p><hr><p>hello EVERYONE</p><hr><p>hello EVERYONE</p><hr><p>hello EVERYONE</p><hr><p>hello EVERYONE</p>'
+					)
+			},5000)
+		</script>
+	</body>
+</html>

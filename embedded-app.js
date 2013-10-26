@@ -1,7 +1,8 @@
 // Needs: 
-//   - jquery.js
+//   - jquery.js (potential to remove)
 //   - porthole.js
-//
+//   - signals.js
+//   - hasher.js
 
 var EmbeddableApp = (function (window, $, Porthole) {
 	'use strict';
@@ -63,9 +64,19 @@ var EmbeddableApp = (function (window, $, Porthole) {
 			this.isConnected = true;
 			this._emptySendQueue();
 		},
-    
+
 		disconnected: function () {
 			this.isConnected = false;
+		},
+
+		appReady: function () {
+			this.send('connect', {
+				// Should send
+				width: $('html').outerWidth(),
+				height: $('html').outerHeight(),
+				hash: document.location.hash
+
+			});
 		},
 
 		resize: function (oldHeight) {
@@ -76,7 +87,7 @@ var EmbeddableApp = (function (window, $, Porthole) {
 			}
 
 			var embeddable = this,
-				height = $('body').outerHeight();
+				height = $('html').outerHeight();
 
 			if($.type(oldHeight) !== 'number'){
 				oldHeight = 0;
@@ -87,27 +98,50 @@ var EmbeddableApp = (function (window, $, Porthole) {
 				embeddable.send('resize', {
 					height: height
 				});
-
-				setTimeout(function(){
-					embeddable.resize(height);
-				}, embeddable.settings.resizeInterval);
-
 			}
+
+			setTimeout(function(){
+				embeddable.resize(height);
+			}, embeddable.settings.resizeInterval);
+		},
+
+		watchHash: function(){
+			if(this.settings.proxyHash){
+				var embeddable = this;
+
+				hasher.init(); //start listening for changes
+				hasher.changed.add( function (hash){
+					embeddable.sendHash(hash);
+				});
+			}
+		},
+		placeHash: function(hash){
+			if(this.settings.proxyHash){
+				hasher.setHash(hash);
+			}
+		},
+		sendHash: function(){
+			this.send('hashChange', {
+				url: document.location.href,
+				hash: hasher.getHash()
+			});
 		},
 
 		events: {
 			// events prefixed w/ `_` are internal events.
-			// they are cancellable by their non-prefixed counterparts
+			// they are cancellable by their non-prefixed counterparts (by returning false)
 			// they are also overwritable incase needed... but probably shouldn't be.
 			_connect: function () {
 
 			},
 			_resize: function (payload) {
 
-				debugger;
+				this.element.find('iframe').height(payload.height);
 
 			},
-			_hashchange: function () {}
+			_hashchange: function (payload) {s
+				this.placeHash(payload.hash)
+			}
 		},
 		create: function () {
 			this.type = 'app';
@@ -151,17 +185,19 @@ var EmbeddableApp = (function (window, $, Porthole) {
 
 		setupProxy: function(name){
 			//Sets up the proxy for XDM messaging
-			var embeddable = this,
-				proxy;
+			var embeddable = this;
 
 			if ($.type(name) === 'string'){
 				// Proxy on the parent page to the app page
-				proxy = new Porthole.WindowProxy( embeddable.settings.proxyUrl, name);
+				embeddable.proxy = new Porthole.WindowProxy( embeddable.settings.proxyUrl, name);
 			} else {
 				// Proxy on the app page to the parent page.
-				proxy = new Porthole.WindowProxy( embeddable.settings.proxyUrl);
+				embeddable.proxy = new Porthole.WindowProxy( embeddable.settings.proxyUrl);
 			}
-			proxy.addEventListener(embeddable.preReceive);
+
+			embeddable.proxy.addEventListener(function(messageEvent){
+				embeddable.preReceive(messageEvent);
+			});
 
 			return embeddable.proxy;
 		},
@@ -194,12 +230,13 @@ var EmbeddableApp = (function (window, $, Porthole) {
 				'payload': payload
 			};
 
-			if (embeddable.isConnected){
+			if (embeddable.isConnected || embeddable.type === 'app'){
+				// Queue if not connected, never queue for embedded app.
 				embeddable.proxy.post(message);
-				embeddable.log('Sent:', message);
+				embeddable.log(embeddable.type+' Sent:', eventType, payload);
 			} else {
 				embeddable._sendQueue.push(message);
-				embeddable.log('Queued:', message);
+				embeddable.log(embeddable.type+' Queued:', eventType, payload);
 			}
 
 		},
@@ -214,15 +251,13 @@ var EmbeddableApp = (function (window, $, Porthole) {
 			*/
 
 			// Validate origin
-			
+
+			eventType = messageEvent.data.eventType;
+			payload = messageEvent.data.payload;
+
+			embeddable.receive(eventType, payload);
+
 			embeddable.connected();
-
-			embeddable.log('Recieved:', messageEvent);
-
-			eventType = '';
-			payload = '';
-
-			embeddable.recieve(eventType, payload);
 		},
 		receive: function (eventType, payload) {
 			// Receiving a message from the other side of the iframes...
@@ -230,17 +265,18 @@ var EmbeddableApp = (function (window, $, Porthole) {
 			var embeddable = this,
 				callInternalEvent = true;
 
-			// If the event type exists...
+			embeddable.log(embeddable.type+' Received:', eventType, payload);
 
+			// If the event type exists...
 			if( jQuery.type(embeddable.events[eventType]) === 'function' ){
 
 				// Call the event with the appropriate payload.
-				callInternalEvent = embeddable.events[eventType](payload);
+				callInternalEvent = embeddable.events[eventType].call(embeddable, payload)
 
 			}
 
 			if( callInternalEvent && jQuery.type(embeddable.events['_'+eventType]) === 'function' ){
-				embeddable.events['_'+eventType](payload);
+				embeddable.events['_'+eventType].call(embeddable, payload)
 			}
 		},
 		log: function(){
@@ -256,7 +292,7 @@ var EmbeddableApp = (function (window, $, Porthole) {
 	pub.VERSION = VERSION;
 	
 	pub.templates = {
-		iframe: '<iframe src="{{url}}" name="{{name}}" id="{{id}}"></iframe>'
+		iframe: '<iframe src="{{url}}" name="{{name}}" id="{{id}}" frameborder="0" allowTransparency="true" scrolling="no" height="640">You need a Frames Capable browser to view an embedded SoapBox. Visit <a href="http://soapboxhq.com/">SoapBoxHQ</a> for more information.</iframe>'
 	};
 	
 	pub.create = function (options) {
@@ -272,15 +308,10 @@ var EmbeddableApp = (function (window, $, Porthole) {
 
 		// 2. send event "App-Ready" w/ basic setup info
 		// TODO
-		embeddable.send('App-Ready', {
-			// Should send
-			// - width
-			// - height
-			// - offset X
-			// - offset Y
-			// - ..?
-		});
+		embeddable.appReady();
 		// 3. listen & wait...
+
+		embeddable.watchHash();
 
 		embeddable.resize();
 
@@ -300,6 +331,7 @@ var EmbeddableApp = (function (window, $, Porthole) {
 		// 3. setup proxy
 		embeddable.setupProxy(embeddable.name);
 
+		embeddable.watchHash();
 		// 3. wait for response from app "EmbeddableApp:App-Ready" called on that pages "onload".
 		// 3.a. extract payload. Should contain basic info.
 		// 3.b. Setup iframe according to specs from "EmbeddableApp:Ready"

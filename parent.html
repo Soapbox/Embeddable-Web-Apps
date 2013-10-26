@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Parent - Embeddable App Test</title>
+
+		<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+		<script type="text/javascript" src="https://rawgithub.com/ternarylabs/porthole/master/src/porthole.min.js"></script>
+		<script type="text/javascript" src="https://rawgithub.com/millermedeiros/js-signals/master/dist/signals.min.js"></script>
+		<script type="text/javascript" src="https://rawgithub.com/millermedeiros/Hasher/master/dist/js/hasher.min.js"></script>
+		<script type="text/javascript" src="//unhassle.brennanmceachran.com/embedded-app.js"></script>
+	</head>
+	<body>
+		<h1>Parent Page</h1>
+		<p>sadas</p>
+		<hr>
+		<div class="app-area" style="background:red;padding:20px;"></div>
+
+		<script type="text/javascript">
+			(function () {
+				'use strict';
+
+				var embeddedApp = EmbeddableApp.insert('.app-area', {
+					url: 'http://brennanmceachran.com/playground/idea/embeddable/app.html',
+					proxyUrl:	'http://brennanmceachran.com/playground/idea/embeddable/proxy.html',
+					proxyHash:	true,
+					resize:		true,
+					debug:		true,
+				});
+				
+				embeddedApp.on({
+					connected: function (payload) {
+						// do something
+					},
+					// EG: eventType: function (payload) {}
+				});
+
+
+				//embeddedApp.send('eventType', { /*payload*/ });
+			}());
+		</script>
+	</body>
+</html>
