@@ -117,7 +117,9 @@ var EmbeddableApp = (function (window, $, Porthole) {
 		},
 		placeHash: function(hash){
 			if(this.settings.proxyHash){
-				hasher.setHash(hash);
+				hasher.changed.active = false;
+				hasher.replaceHash(hash);
+				hasher.changed.active = true;
 			}
 		},
 		sendHash: function(){
@@ -139,7 +141,7 @@ var EmbeddableApp = (function (window, $, Porthole) {
 				this.element.find('iframe').height(payload.height);
 
 			},
-			_hashchange: function (payload) {s
+			_hashChange: function (payload) {
 				this.placeHash(payload.hash)
 			}
 		},
