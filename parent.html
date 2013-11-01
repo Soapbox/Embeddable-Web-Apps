@@ -3,8 +3,6 @@
 	<head>
 		<title>Parent - Embeddable App Test</title>
 
-		<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-		<script type="text/javascript" src="https://rawgithub.com/ternarylabs/porthole/master/src/porthole.min.js"></script>
 		<script type="text/javascript" src="https://rawgithub.com/millermedeiros/js-signals/master/dist/signals.min.js"></script>
 		<script type="text/javascript" src="https://rawgithub.com/millermedeiros/Hasher/master/dist/js/hasher.min.js"></script>
 		<script type="text/javascript" src="//unhassle.brennanmceachran.com/embedded-app.js"></script>
@@ -13,29 +11,48 @@
 		<h1>Parent Page</h1>
 		<p>sadas</p>
 		<hr>
-		<div class="app-area" style="background:red;padding:20px;"></div>
+
+		<div id="app-backdrop" style="position:fixed;top:0;left:0;bottom:0;right:0;background:#000;opacity:0.3;display:none;z-index:0;"></div>
+		<div id="app-area" style="position:relative;background:red;padding:20px;z-index:1;"></div>
 
 		<script type="text/javascript">
 			(function () {
 				'use strict';
 
-				var embeddedApp = EmbeddableApp.insert('.app-area', {
-					url: 'http://brennanmceachran.com/playground/idea/embeddable/app.html',
-					proxyUrl:	'http://brennanmceachran.com/playground/idea/embeddable/proxy.html',
+				var addevent = function addevent(element, eventName, eventFunction) {
+					if(element.attachEvent) {
+						//Internet Explorer
+						element.attachEvent("on" + eventName, function() {eventFunction.call(element);});
+					} else if(element.addEventListener) {
+						// Standards
+						element.addEventListener(eventName, eventFunction, false); //don't need the 'call' trick because in FF everything already works in the right way          
+					}
+				};
+
+				var appBackdrop = document.getElementById('app-backdrop');
+				var embeddedApp = EmbeddableApp.insert('app-area', {
+					url: 'http://soapbox.dev/',
+					proxyUrl:	'http://soapbox.dev/tools/proxy',
 					proxyHash:	true,
 					resize:		true,
 					debug:		true
 				});
 				
 				embeddedApp.on({
-					connected: function (payload) {
-						// do something
+					modalOpen: function (payload) {
+						//debugger;
+						appBackdrop.style.display = 'block';
 					},
-					// EG: eventType: function (payload) {}
+					modalClose: function(payload) {
+						//debugger;
+						appBackdrop.style.display = 'none';
+					}
 				});
 
-
-				//embeddedApp.send('eventType', { /*payload*/ });
+				addevent(appBackdrop, 'click', function(){
+					appBackdrop.style.display = 'none';
+					embeddedApp.send('modalClose', {});
+				});
 			}());
 		</script>
 	</body>
