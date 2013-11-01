@@ -3,17 +3,43 @@
 	<head>
 		<title>Parent - Embeddable App Test</title>
 
-		<script type="text/javascript" src="https://rawgithub.com/millermedeiros/js-signals/master/dist/signals.min.js"></script>
-		<script type="text/javascript" src="https://rawgithub.com/millermedeiros/Hasher/master/dist/js/hasher.min.js"></script>
 		<script type="text/javascript" src="//unhassle.brennanmceachran.com/embedded-app.js"></script>
+		<style>
+			#app-backdrop {
+				display:block;
+				position:fixed;
+				top:100%;right:0;bottom:0;left:0;
+				background:#000;
+				opacity:0;
+				z-index:0;
+
+				-webkit-transition: opacity 3s linear;
+				-moz-transition: opacity 3s linear;
+				-o-transition: opacity 3s linear;
+				-ms-transition: opacity 3s linear;
+				transition: opacity 3s linear;
+			}
+			#app-area {
+				position:relative;
+				border:1px solid red;
+				z-index:1;
+			}
+		</style>
 	</head>
 	<body>
 		<h1>Parent Page</h1>
 		<p>sadas</p>
+		<p>sadas</p>
+		<p>sadas</p>
+		<p>sadas</p>
+		<p>sadas</p>
+		<p>sadas</p>
+		<p>sadas</p>
+		<p>sadas</p>
 		<hr>
 
-		<div id="app-backdrop" style="position:fixed;top:0;left:0;bottom:0;right:0;background:#000;opacity:0.3;display:none;z-index:0;"></div>
-		<div id="app-area" style="position:relative;background:red;padding:20px;z-index:1;"></div>
+		<div id="app-backdrop"></div>
+		<div id="app-area"></div>
 
 		<script type="text/javascript">
 			(function () {
@@ -41,16 +67,19 @@
 				embeddedApp.on({
 					modalOpen: function (payload) {
 						//debugger;
-						appBackdrop.style.display = 'block';
+						appBackdrop.style.top = '0%';
+						appBackdrop.style.opacity = '0.3';
 					},
 					modalClose: function(payload) {
 						//debugger;
-						appBackdrop.style.display = 'none';
+						appBackdrop.style.top = '100%';
+						appBackdrop.style.opacity = '0';
 					}
 				});
 
 				addevent(appBackdrop, 'click', function(){
-					appBackdrop.style.display = 'none';
+					appBackdrop.style.top = '100%';
+					appBackdrop.style.opacity = '0';
 					embeddedApp.send('modalClose', {});
 				});
 			}());
